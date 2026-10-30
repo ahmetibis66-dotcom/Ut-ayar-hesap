@@ -1,0 +1,1331 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>NDTPratik</title>
+<style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0d0c;
+      --panel: #111614;
+      --panel-2: #171d1a;
+      --screen: #050806;
+      --line: #232c27;
+      --line-2: #33403a;
+      --text: #e4ede7;
+      --muted: #8b9a92;
+      --faint: #5c6b63;
+      --phos: #a3ff5c;
+      --phos-soft: rgba(163, 255, 92, 0.14);
+      --amber: #ffb23e;
+      --amber-soft: rgba(255, 178, 62, 0.14);
+      --danger: #ff6b4a;
+
+      --f-display: "Bahnschrift", "DIN Alternate", "DIN Condensed", "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+      --f-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      --f-mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --radius: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(163, 255, 92, 0.07), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(255, 178, 62, 0.05), transparent 60%),
+        linear-gradient(var(--bg), var(--bg));
+      color: var(--text);
+      font-family: var(--f-body);
+      line-height: 1.5;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    }
+
+    /* Ölçü kağıdı ızgarası + hafif gren: sabit ve etkileşimsiz katman */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      background-size: 32px 32px, 32px 32px, 160px 160px;
+      mask-image: linear-gradient(to bottom, black, rgba(0,0,0,0.4));
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    /* ÜST BAR */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.4rem 0 1.25rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
+    .brand svg { flex: none; width: 44px; height: 44px; }
+    .brand h1 {
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-size: clamp(1.45rem, 3.2vw, 2rem);
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+    .brand h1 span { color: var(--phos); }
+    .brand p {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      white-space: nowrap;
+    }
+    .led {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--phos);
+      box-shadow: 0 0 10px var(--phos);
+      animation: blink 2.4s ease-in-out infinite;
+    }
+    .status.offline .led { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+    @keyframes blink { 50% { opacity: 0.35; } }
+
+    /* YERLEŞİM */
+    .console {
+      display: grid;
+      gap: 1.1rem;
+      grid-template-columns: 1fr;
+      grid-template-areas: "controls" "readouts" "screens" "actions";
+    }
+    @media (min-width: 980px) {
+      .console {
+        grid-template-columns: 340px minmax(0, 1fr);
+        grid-template-areas:
+          "controls screens"
+          "controls readouts"
+          "actions  readouts";
+        align-items: start;
+      }
+      .controls { position: sticky; top: 1rem; }
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 20px 40px -24px rgba(0,0,0,0.8);
+      animation: rise 0.6s cubic-bezier(.2,.7,.2,1) both;
+    }
+    .controls { grid-area: controls; padding: 1.15rem; animation-delay: 0.05s; }
+    .screens  { grid-area: screens; display: grid; gap: 1.1rem; }
+    .readouts { grid-area: readouts; display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .actions  { grid-area: actions; display: grid; gap: 0.9rem; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .eyebrow {
+      font-family: var(--f-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 6px; height: 6px;
+      background: var(--phos);
+      border-radius: 1px;
+    }
+
+    /* GİRDİLER */
+    .field { padding: 1rem 0; border-top: 1px dashed var(--line); }
+    .field:first-of-type { border-top: 0; padding-top: 0.2rem; }
+
+    .field-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+    .field label, .field .label {
+      font-size: 0.86rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .field small { display: block; color: var(--faint); font-size: 0.74rem; font-weight: 400; }
+
+    .num {
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      background: var(--screen);
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      padding: 0.3rem 0.55rem;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .num:focus-within { border-color: var(--phos); box-shadow: 0 0 0 3px var(--phos-soft); }
+    .num.invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,107,74,0.15); }
+    .num input {
+      width: 4.6rem;
+      background: transparent;
+      border: 0;
+      outline: none;
+      color: var(--phos);
+      font-family: var(--f-mono);
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: right;
+      -moz-appearance: textfield;
+    }
+    .num input::-webkit-outer-spin-button, .num input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .num span { color: var(--muted); font-family: var(--f-mono); font-size: 0.8rem; }
+    .num output { color: var(--phos); font-family: var(--f-mono); font-size: 1.15rem; font-weight: 600; min-width: 3.2rem; text-align: right; }
+
+    .error { color: var(--danger); font-size: 0.78rem; margin-top: 0.5rem; display: none; }
+    .error.show { display: block; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 28px;
+      background: transparent;
+      cursor: pointer;
+      --p: 50%;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--phos) var(--p), var(--line-2) var(--p));
+    }
+    input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--line-2); }
+    input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--phos); }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      margin-top: -7px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 3px solid var(--phos);
+      box-shadow: 0 0 0 4px var(--phos-soft);
+      transition: transform .15s;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 3px solid var(--phos);
+      box-shadow: 0 0 0 4px var(--phos-soft);
+    }
+    input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+    input[type="range"]:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; border-radius: 4px; }
+
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--f-mono);
+      font-size: 0.66rem;
+      color: var(--faint);
+      margin-top: 0.1rem;
+    }
+
+    .seg {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+    }
+    .seg.six { grid-template-columns: repeat(3, 1fr); }
+    .seg button, .seg label {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 42px;
+      background: var(--screen);
+      border: 1px solid var(--line-2);
+      color: var(--text);
+      border-radius: 9px;
+      font-family: var(--f-mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s, transform .1s;
+      user-select: none;
+    }
+    .seg button:hover, .seg label:hover { border-color: var(--faint); }
+    .seg button:active, .seg label:active { transform: scale(0.97); }
+    .seg button[aria-pressed="true"], .seg input:checked + label {
+      background: var(--phos-soft);
+      border-color: var(--phos);
+      color: var(--phos);
+      box-shadow: 0 0 18px -6px var(--phos);
+    }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg input:focus-visible + label, .seg button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    .seg-angle { margin-bottom: 0.6rem; }
+
+    .summary {
+      margin-top: 0.4rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 10px;
+      background: var(--screen);
+      border: 1px solid var(--line);
+      font-family: var(--f-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.9rem;
+    }
+    .summary b { color: var(--text); font-weight: 600; text-align: right; }
+
+    /* EKRANLAR */
+    .screen-card { padding: 1rem; }
+    .screen-card:nth-child(1) { animation-delay: 0.12s; }
+    .screen-card:nth-child(2) { animation-delay: 0.2s; }
+
+    .scope {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(163,255,92,0.05), transparent 70%),
+        var(--screen);
+      border: 1px solid var(--line-2);
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(163,255,92,0.04);
+    }
+    /* CRT tarama çizgileri */
+    .scope::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px);
+    }
+    canvas { display: block; width: 100%; }
+    #canvasBeam  { height: 270px; }
+    #canvasAscan { height: 230px; }
+    @media (max-width: 600px) {
+      #canvasBeam  { height: 230px; }
+      #canvasAscan { height: 200px; }
+    }
+
+    .tools { display: flex; align-items: center; gap: 0.4rem; }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      height: 32px;
+      padding: 0 0.7rem;
+      background: var(--screen);
+      border: 1px solid var(--line-2);
+      color: var(--text);
+      border-radius: 8px;
+      font-family: var(--f-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .icon-btn:hover { border-color: var(--phos); color: var(--phos); }
+    .icon-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    .icon-btn svg { width: 12px; height: 12px; fill: currentColor; }
+    .icon-btn[aria-pressed="true"] { color: var(--phos); border-color: var(--phos); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1rem;
+      margin-top: 0.7rem;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .legend i {
+      display: inline-block;
+      width: 14px; height: 3px;
+      border-radius: 2px;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    /* SONUÇLAR */
+    .readout {
+      position: relative;
+      padding: 1rem 1.05rem 1.05rem;
+      overflow: hidden;
+    }
+    .readout:nth-child(1) { animation-delay: 0.16s; }
+    .readout:nth-child(2) { animation-delay: 0.22s; }
+    .readout:nth-child(3) { animation-delay: 0.28s; }
+    .readout:nth-child(4) { animation-delay: 0.34s; }
+    .readout::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--phos);
+      opacity: 0.8;
+    }
+    .readout.gate::before { background: var(--amber); }
+
+    .readout header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .idx {
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      color: var(--bg);
+      background: var(--phos);
+      border-radius: 4px;
+      padding: 0.05rem 0.35rem;
+      font-weight: 700;
+    }
+    .gate .idx { background: var(--amber); }
+    .readout h2 {
+      font-family: var(--f-display);
+      font-size: 1.02rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      flex: 1;
+    }
+    .sym {
+      font-family: var(--f-mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      border: 1px solid var(--line-2);
+      border-radius: 5px;
+      padding: 0 0.4rem;
+    }
+
+    .value {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-family: var(--f-mono);
+      margin: 0.15rem 0 0.6rem;
+    }
+    .value output {
+      font-size: clamp(2rem, 4.2vw, 2.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--phos);
+      text-shadow: 0 0 22px rgba(163,255,92,0.35);
+      font-variant-numeric: tabular-nums;
+    }
+    .gate .value output { color: var(--amber); text-shadow: 0 0 22px rgba(255,178,62,0.35); }
+    .value span { color: var(--muted); font-size: 0.9rem; }
+
+    .formula {
+      font-family: var(--f-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .formula.sub {
+      color: var(--text);
+      opacity: 0.8;
+      margin-top: 0.2rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed var(--line);
+    }
+    .note {
+      font-size: 0.76rem;
+      color: var(--amber);
+      font-style: italic;
+      margin-top: 0.45rem;
+    }
+
+    .flash output { animation: flash 0.5s ease-out; }
+    @keyframes flash { 0% { filter: brightness(1.8); } 100% { filter: none; } }
+
+    /* EYLEMLER */
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      width: 100%;
+      min-height: 52px;
+      background: var(--phos);
+      color: #0b1406;
+      border: 0;
+      border-radius: 12px;
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 10px 30px -12px rgba(163,255,92,0.6);
+      transition: transform .12s, box-shadow .2s, filter .2s;
+    }
+    .btn-copy:hover { filter: brightness(1.08); box-shadow: 0 14px 34px -12px rgba(163,255,92,0.75); }
+    .btn-copy:active { transform: translateY(1px) scale(0.995); }
+    .btn-copy:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+    .btn-copy svg { width: 18px; height: 18px; }
+
+    .disclaimer {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--amber);
+      background: rgba(255,178,62,0.04);
+    }
+    .disclaimer strong { color: var(--amber); }
+
+    footer {
+      text-align: center;
+      margin-top: 1.75rem;
+      color: var(--faint);
+      font-family: var(--f-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(1.25rem, env(safe-area-inset-bottom));
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      z-index: 10;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--phos);
+      border-radius: 999px;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.86rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.err { border-color: var(--danger); }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="1" y="1" width="46" height="46" rx="10" fill="#111614" stroke="#33403a"></rect>
+        <rect x="7" y="25" width="34" height="14" fill="#171d1a" stroke="#33403a"></rect>
+        <rect x="8" y="18" width="10" height="7" rx="1.5" fill="#a3ff5c"></rect>
+        <polyline points="14,25 21,39 28,25 35,39" fill="none" stroke="#a3ff5c" stroke-width="2.4" stroke-linejoin="round"></polyline>
+        <circle cx="35" cy="39" r="2.6" fill="#ffb23e"></circle>
+        <path d="M24 9 q3 4 0 8 M28 7 q5 6 0 12" fill="none" stroke="#a3ff5c" stroke-width="1.6" stroke-linecap="round" opacity="0.7"></path>
+      </svg>
+      <div>
+        <h1>NDT<span>Pratik</span></h1>
+        <p>Ultrasonik Muayene · Saha Hesaplama &amp; Doğrulama</p>
+      </div>
+    </div>
+    <div class="status" id="netStatus" role="status"><span class="led"></span><span id="netText">ÇEVRİMİÇİ</span></div>
+  </header>
+
+  <main class="console">
+
+    <!-- GİRDİ PARAMETRELERİ -->
+    <section class="panel controls" aria-labelledby="params_title">
+      <div class="panel-head">
+        <h2 class="eyebrow" id="params_title">Muayene Parametreleri</h2>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label for="input_T">Malzeme Kalınlığı (T)<small>Parça / kaynak et kalınlığı</small></label>
+          <div class="num" id="num_T">
+            <input type="number" id="input_T" value="10" min="0.1" max="500" step="0.1" inputmode="decimal" aria-describedby="err_T">
+            <span>mm</span>
+          </div>
+        </div>
+        <input type="range" id="range_T" min="1" max="100" step="0.5" value="10" aria-label="Malzeme kalınlığı kaydırıcısı" style="--p: 9.090909090909092%;">
+        <div class="ticks" aria-hidden="true"><span>1</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+        <p class="error" id="err_T">Kalınlık 0'dan büyük olmalıdır.</p>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <span class="label" id="angle_label">Prob Açısı (θ)<small>Normalden ölçülen kırılma açısı</small></span>
+          <div class="num"><output id="out_angle" for="range_angle">70°</output></div>
+        </div>
+        <div class="seg seg-angle" role="group" aria-labelledby="angle_label">
+          <button type="button" data-angle="45" aria-pressed="false">45°</button>
+          <button type="button" data-angle="60" aria-pressed="false">60°</button>
+          <button type="button" data-angle="70" aria-pressed="true">70°</button>
+        </div>
+        <input type="range" id="range_angle" min="35" max="80" step="1" value="70" aria-label="Özel prob açısı" style="--p: 77.77777777777779%;">
+        <div class="ticks" aria-hidden="true"><span>35°</span><span>45°</span><span>60°</span><span>70°</span><span>80°</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <span class="label" id="r_label">Papuç Yarıçapı (R)<small>Prop ucundan index noktasına mesafe</small></span>
+          <div class="num"><output id="out_R">0.0</output><span style="font-size:.85em;opacity:.7"> mm</span></div>
+        </div>
+        <div class="num-wrap" style="margin:6px 0 4px;display:flex;align-items:center;gap:8px">
+          <input type="number" id="input_R" min="0" max="50" step="0.1" value="0" inputmode="decimal" aria-labelledby="r_label" style="width:100%;max-width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);font:inherit">
+          <span class="unit">mm</span>
+        </div>
+        <input type="range" id="range_R" min="0" max="25" step="0.5" value="0" aria-label="Papuç yarıçapı" style="width:100%;margin-top:4px">
+        <div class="ticks" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>25</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <span class="label" id="skip_label">Sekme Sayısı (n)<small>1 sekme = alt yüzeye gidip üst yüzeye dönüş</small></span>
+        </div>
+        <div class="seg six" role="radiogroup" aria-labelledby="skip_label" id="skipGroup">
+          <input type="radio" name="skip" id="n050" value="0.5"><label for="n050">0.5</label>
+          <input type="radio" name="skip" id="n075" value="0.75"><label for="n075">0.75</label>
+          <input type="radio" name="skip" id="n100" value="1.0"><label for="n100">1.0</label>
+          <input type="radio" name="skip" id="n125" value="1.25"><label for="n125">1.25</label>
+          <input type="radio" name="skip" id="n150" value="1.50"><label for="n150">1.50</label>
+          <input type="radio" name="skip" id="n175" value="1.75" checked=""><label for="n175">1.75</label>
+        </div>
+      </div>
+
+      <div class="summary" aria-live="polite">
+        <span>Bacak ses yolu</span><b id="sum_leg">29.24 mm</b>
+        <span>Yarım sekme yatay</span><b id="sum_half">27.47 mm</b>
+        <span>Bitiş yüzeyi</span><b id="sum_end">İç bölge · 50% derinlik</b>
+      </div>
+    </section>
+
+    <!-- CANLI SİMÜLASYON -->
+    <section class="screens" aria-label="Canlı simülasyon">
+      <div class="panel screen-card">
+        <div class="panel-head">
+          <h2 class="eyebrow">Işın Yolu Kesiti</h2>
+          <div class="tools">
+            <button type="button" class="icon-btn" id="btnSpeed" aria-label="Simülasyon hızı">1×</button>
+            <button type="button" class="icon-btn" id="btnPlay" aria-pressed="true">
+              <svg viewBox="0 0 12 12" id="icoPause"><rect x="2" y="1" width="3" height="10"></rect><rect x="7" y="1" width="3" height="10"></rect></svg>
+              <svg viewBox="0 0 12 12" id="icoPlay" hidden=""><path d="M2 1 L11 6 L2 11 Z"></path></svg>
+              <span id="playText">DURDUR</span>
+            </button>
+          </div>
+        </div>
+        <div class="scope">
+          <canvas id="canvasBeam" role="img" aria-label="Malzeme kesitinde ses ışını sekme yolu ve ilerleyen ses darbesi" width="697" height="270"></canvas>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span><i style="background:var(--phos)"></i>Ses ışını</span>
+          <span><i style="background:#e9ffe0"></i>Giden darbe</span>
+          <span><i style="background:var(--amber)"></i>Yansıyan darbe / hedef</span>
+          <span><i style="background:var(--muted)"></i>Sekme noktaları</span>
+        </div>
+      </div>
+
+      <div class="panel screen-card">
+        <div class="panel-head">
+          <h2 class="eyebrow">A-Scan Ekranı · 0–10 Skala</h2>
+          <span class="formula" id="ascan_range">Aralık 204.67 mm · 1 böl. = 20.47 mm</span>
+        </div>
+        <div class="scope">
+          <canvas id="canvasAscan" role="img" aria-label="Kapı konumundaki yankıyı gösteren canlı A-Scan ekranı" width="697" height="230"></canvas>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span><i style="background:var(--phos)"></i>Sinyal (doğrultulmuş)</span>
+          <span><i style="background:var(--amber)"></i>Kapı</span>
+          <span><i style="background:var(--faint)"></i>Sekme işaretleri</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SONUÇLAR -->
+    <section class="readouts" aria-label="Hesap sonuçları">
+      <article class="panel readout flash" id="card_P">
+        <header><span class="idx">01</span><h2>Prop Mesafesi</h2><span class="sym">P</span></header>
+        <div class="value"><output id="res_P">96.16</output><span>mm</span></div>
+        <div class="formula">P = 2 × T × tan(θ) × n − R</div>
+        <div class="formula sub" id="calc_p_detail">P = 2 × 10 mm × 2.7475… × 1.75</div>
+        <p class="note">*(Prop Pucu Çapı / Papuç Yarıçapı Çıkacak)</p>
+      </article>
+
+      <article class="panel readout flash" id="card_S">
+        <header><span class="idx">02</span><h2>Ses Yolu</h2><span class="sym">S</span></header>
+        <div class="value"><output id="res_S">102.33</output><span>mm</span></div>
+        <div class="formula">S = (2 × T × n) / cos(θ)</div>
+        <div class="formula sub" id="calc_s_detail">S = (2 × 10 mm × 1.75) / 0.34202…</div>
+      </article>
+
+      <article class="panel readout flash" id="card_Range">
+        <header><span class="idx">03</span><h2>Ekran Aralığı</h2><span class="sym">R</span></header>
+        <div class="value"><output id="res_Range">204.67</output><span>mm</span></div>
+        <div class="formula">R = [(2 × T) / cos(θ)] × n × 2 = S × 2</div>
+        <div class="formula sub" id="calc_range_detail">R = 102.33 mm × 2</div>
+      </article>
+
+      <article class="panel readout gate flash" id="card_Gate">
+        <header><span class="idx">04</span><h2>Kapı Konumu (Geçiş)</h2><span class="sym">K</span></header>
+        <div class="value"><output id="res_Gate">5.00</output><span>/ 10</span></div>
+        <div class="formula">K = (Ses Yolu / Ekran Aralığı) × 10</div>
+        <div class="formula sub" id="calc_gate_detail">K = (102.33 / 204.67) × 10</div>
+      </article>
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn-copy" id="btnCopy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>
+        Teknik Rapor Özetini Kopyala
+      </button>
+      <div class="disclaimer">
+        <strong>Saha Doğrulama Notu:</strong> Bu hesaplamalar EN ISO 17640 ve ASME Sec V standartlarına uygun trigonometrik bağıntılar ile yapılmaktadır. Simülasyon görseldir; nihai değerlendirme yetkili Seviye 2 / Seviye 3 NDT personelinin sorumluluğundadır.
+      </div>
+    </section>
+  </main>
+
+  <footer>NDTPratik © 2026 — Bağımsız NDT Saha Hesaplama Aracı</footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = {
+    phos: '#a3ff5c', phosRGB: '163,255,92',
+    amber: '#ffb23e', amberRGB: '255,178,62',
+    text: '#e4ede7', muted: '#8b9a92', faint: '#5c6b63',
+    grid: 'rgba(163,255,92,0.07)', gridStrong: 'rgba(163,255,92,0.16)',
+    mono: '600 11px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'
+  };
+
+  // Girdi değerleri (hedef) ve çizimde yumuşak geçiş yapan görünen değerler
+  const state = { T: 10, theta: 70, n: 1.75, R: 0 };
+  const view = { ...state };
+  let playing = !reduceMotion;
+  let speed = 1;
+  let phase = reduceMotion ? 0.999 : 0;   // 0..1 = A-Scan süpürmesi (0 → ekran aralığı)
+
+  // ---------- HESAPLAMA ----------
+  function geometry(T, theta, n, R = 0) {
+    const rad = theta * Math.PI / 180;
+    const tan = Math.tan(rad), cos = Math.cos(rad);
+    const legX = T * tan;     // bir bacağın yatay ilerlemesi
+    const legS = T / cos;     // bir bacağın ses yolu
+    const P_raw = 2 * T * tan * n;
+    const P = Math.max(0, P_raw - (R || 0));  // papuç yarıçapı düşülür
+    const S = (2 * T * n) / cos;
+    const range = S * 2;
+    const gate = (S / range) * 10;
+
+    // Işın yolu noktaları (mm): her bacak bir kalınlık boyunca ilerler; n = 1 sekme = 2 bacak.
+    // Kesirli bacaklar (örn. 0.75 sekme = 1.5 bacak) kalınlığın ilgili oranında biter.
+    const pts = [{ x: 0, y: 0, s: 0, full: false }];
+    let rem = n * 2, x = 0, s = 0, down = true;
+    while (rem > 1e-9) {
+      const f = Math.min(1, rem);
+      x += legX * f; s += legS * f;
+      pts.push({ x, y: down ? T * f : T - T * f, s, full: f > 1 - 1e-9 });
+      down = !down; rem -= f;
+    }
+    return { T, theta, n, R: R || 0, rad, tan, cos, legX, legS, P, P_raw, S, range, gate, pts };
+  }
+
+  const fmt = (v, d = 2) => v.toFixed(d);
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el.textContent === text) return false;
+    el.textContent = text;
+    return true;
+  }
+
+  function flash(cardId) {
+    const el = $(cardId);
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  function updateReadouts() {
+    const g = geometry(state.T, state.theta, state.n, state.R);
+    const T = state.T, n = state.n, R = state.R || 0;
+
+    if (setText('res_P', fmt(g.P))) flash('card_P');
+    if (R > 0) {
+      setText('calc_p_detail', `P = 2 × ${T} × tan(${state.theta}°) × ${n} − ${fmt(R)} = ${fmt(g.P_raw)} − ${fmt(R)}`);
+    } else {
+      setText('calc_p_detail', `P = 2 × ${T} mm × ${g.tan.toFixed(4)}… × ${n}`);
+    }
+    const noteEl = document.querySelector('#card_P .note');
+    if (noteEl) {
+      noteEl.textContent = R > 0
+        ? `*(Papuç yarıçapı ${fmt(R)} mm düşüldü)`
+        : '*(Prop Pucu Çapı / Papuç Yarıçapı Çıkacak)';
+    }
+
+    if (setText('res_S', fmt(g.S))) flash('card_S');
+    setText('calc_s_detail', `S = (2 × ${T} mm × ${n}) / ${g.cos.toFixed(5)}…`);
+
+    if (setText('res_Range', fmt(g.range))) flash('card_Range');
+    setText('calc_range_detail', `R = ${fmt(g.S)} mm × 2`);
+
+    if (setText('res_Gate', fmt(g.gate))) flash('card_Gate');
+    setText('calc_gate_detail', `K = (${fmt(g.S)} / ${fmt(g.range)}) × 10`);
+
+    setText('sum_leg', fmt(g.legS) + ' mm');
+    setText('sum_half', fmt(g.legX) + ' mm');
+    const legs = n * 2;
+    const frac = legs - Math.floor(legs);
+    let endText;
+    if (frac < 1e-9) endText = Math.round(legs) % 2 ? 'Alt yüzey' : 'Üst yüzey';
+    else endText = `İç bölge · ${Math.round((Math.floor(legs) % 2 ? 1 - frac : frac) * 100)}% derinlik`;
+    setText('sum_end', endText);
+    setText('ascan_range', `Aralık ${fmt(g.range)} mm · 1 böl. = ${fmt(g.range / 10)} mm`);
+  }
+
+  // ---------- GİRDİLER ----------
+  const inT = $('input_T'), rangeT = $('range_T'), rangeA = $('range_angle');
+
+  function paintRange(r) {
+    const p = (r.value - r.min) / (r.max - r.min) * 100;
+    r.style.setProperty('--p', p + '%');
+  }
+
+  function setThickness(v, from) {
+    const ok = Number.isFinite(v) && v > 0 && v <= 500;
+    $('num_T').classList.toggle('invalid', !ok);
+    $('err_T').classList.toggle('show', !ok);
+    inT.setAttribute('aria-invalid', String(!ok));
+    if (!ok) return;
+    state.T = v;
+    if (from !== 'range') { rangeT.value = Math.min(100, Math.max(1, v)); }
+    if (from !== 'input') { inT.value = v; }
+    paintRange(rangeT);
+    updateReadouts();
+  }
+
+  inT.addEventListener('input', () => setThickness(parseFloat(inT.value.replace(',', '.')), 'input'));
+  rangeT.addEventListener('input', () => setThickness(parseFloat(rangeT.value), 'range'));
+
+  function setAngle(a) {
+    state.theta = a;
+    rangeA.value = a;
+    paintRange(rangeA);
+    $('out_angle').textContent = a + '°';
+    document.querySelectorAll('[data-angle]').forEach(b =>
+      b.setAttribute('aria-pressed', String(+b.dataset.angle === a)));
+    updateReadouts();
+  }
+  document.querySelectorAll('[data-angle]').forEach(b =>
+    b.addEventListener('click', () => setAngle(+b.dataset.angle)));
+  rangeA.addEventListener('input', () => setAngle(+rangeA.value));
+
+  // --- Papuç Yarıçapı (R) ---
+  const inR = $('input_R'), rangeR = $('range_R');
+  function setRadius(v, from) {
+    v = Math.max(0, Number.isFinite(v) ? v : 0);
+    state.R = v;
+    if (from !== 'range' && rangeR) rangeR.value = Math.min(25, v);
+    if (from !== 'input' && inR) inR.value = v;
+    if (rangeR) paintRange(rangeR);
+    const outR = $('out_R');
+    if (outR) outR.textContent = v.toFixed(1);
+    updateReadouts();
+  }
+  if (inR) inR.addEventListener('input', () => setRadius(parseFloat(String(inR.value).replace(',', '.')), 'input'));
+  if (rangeR) {
+    rangeR.addEventListener('input', () => setRadius(parseFloat(rangeR.value), 'range'));
+    paintRange(rangeR);
+  }
+
+  document.querySelectorAll('input[name="skip"]').forEach(r =>
+    r.addEventListener('change', () => { state.n = parseFloat(r.value); updateReadouts(); }));
+
+  $('btnPlay').addEventListener('click', () => {
+    playing = !playing;
+    $('btnPlay').setAttribute('aria-pressed', String(playing));
+    $('icoPause').hidden = !playing;
+    $('icoPlay').hidden = playing;
+    $('playText').textContent = playing ? 'DURDUR' : 'OYNAT';
+  });
+
+  const speeds = [1, 0.5, 0.25, 2];
+  $('btnSpeed').addEventListener('click', () => {
+    speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+    $('btnSpeed').textContent = speed + '×';
+  });
+
+  // ---------- CANVAS ----------
+  const canvases = {};
+  function fitCanvas(id) {
+    const cv = $(id);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvases[id] = { ctx, w, h };
+  }
+  function fitAll() { fitCanvas('canvasBeam'); fitCanvas('canvasAscan'); }
+
+  // Bir çoklu çizgi üzerinde ses yolu mesafesine (mm) karşılık gelen nokta
+  function pointAt(pts, s) {
+    if (s <= 0) return pts[0];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i];
+      if (s <= b.s) {
+        const t = (s - a.s) / (b.s - a.s || 1);
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      }
+    }
+    return pts[pts.length - 1];
+  }
+
+  // Darbenin ışın üzerindeki konumu: süpürme x = v·t/2 olduğundan, ekranda yankı S'de
+  // görünürken darbe hedefe gidip probuna dönmüştür (phase 0–0.25 gidiş, 0.25–0.5 dönüş).
+  function pulseState(g, u) {
+    if (u < 0.25) return { s: g.S * (u / 0.25), back: false };
+    if (u < 0.5)  return { s: g.S * (1 - (u - 0.25) / 0.25), back: true };
+    return null;
+  }
+
+  function drawBeam(g, u) {
+    const { ctx, w, h } = canvases.canvasBeam;
+    ctx.clearRect(0, 0, w, h);
+
+    const padL = Math.min(78, w * 0.14), padR = 58, padT = 74, padB = 30;
+    const availW = Math.max(40, w - padL - padR), availH = Math.max(30, h - padT - padB);
+    const scale = Math.min(availW / (g.P * 1.04), availH / g.T);   // gerçek ölçek: açılar bozulmaz
+    const ph = g.T * scale;
+    const y0 = padT + (availH - ph) / 2, y1 = y0 + ph;
+    const x0 = padL;
+    const plateL = 10, plateR = w - padR + 12;
+    const X = mm => x0 + mm * scale, Y = mm => y0 + mm * scale;
+
+    // Malzeme gövdesi
+    const grad = ctx.createLinearGradient(0, y0, 0, y1);
+    grad.addColorStop(0, '#1c2420'); grad.addColorStop(1, '#121815');
+    ctx.fillStyle = grad;
+    ctx.fillRect(plateL, y0, plateR - plateL, ph);
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(plateL, y0, plateR - plateL, ph); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 1;
+    for (let x = plateL - ph; x < plateR; x += 9) {
+      ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x + ph, y0); ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = '#3d4b44'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(plateL, y0); ctx.lineTo(plateR, y0); ctx.moveTo(plateL, y1); ctx.lineTo(plateR, y1); ctx.stroke();
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = '#2a332e';
+    ctx.beginPath(); ctx.moveTo(plateL, y0); ctx.lineTo(plateL, y1); ctx.moveTo(plateR, y0); ctx.lineTo(plateR, y1); ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (ph > 30) {
+      ctx.font = C.mono; ctx.fillStyle = C.faint; ctx.textAlign = 'right';
+      ctx.fillText('ÜST YÜZEY', plateR - 6, y0 + 13);
+      ctx.fillText('ALT YÜZEY', plateR - 6, y1 - 6);
+    }
+
+    // Normal ve açı yayı
+    const arcR = Math.max(10, Math.min(34, ph - 6));
+    ctx.setLineDash([2, 3]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + arcR + 6); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x0, y0, arcR, Math.PI / 2 - g.rad, Math.PI / 2); ctx.stroke();
+    const mid = Math.PI / 2 - g.rad / 2;
+    ctx.fillStyle = C.amber; ctx.font = C.mono; ctx.textAlign = 'left';
+    if (ph > 22) ctx.fillText(Math.round(g.theta) + '°', x0 + Math.cos(mid) * (arcR + 5) + 2, y0 + Math.sin(mid) * (arcR + 5) + 4);
+
+    // Işın (yumuşak parıltı + çekirdek)
+    const px = g.pts.map(p => ({ x: X(p.x), y: Y(p.y) }));
+    const tracePath = () => { ctx.beginPath(); px.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); };
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    tracePath(); ctx.strokeStyle = `rgba(${C.phosRGB},0.10)`; ctx.lineWidth = 12; ctx.stroke();
+    tracePath(); ctx.strokeStyle = `rgba(${C.phosRGB},0.22)`; ctx.lineWidth = 5; ctx.stroke();
+    tracePath(); ctx.strokeStyle = C.phos; ctx.lineWidth = 1.6; ctx.stroke();
+
+    // Ara sekme noktaları ve etiketleri
+    ctx.font = C.mono; ctx.textAlign = 'center';
+    for (let i = 1; i < g.pts.length - 1; i++) {
+      const p = px[i], bottom = g.pts[i].y > g.T / 2;
+      ctx.fillStyle = C.muted;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C.faint;
+      ctx.fillText((i * 0.5).toFixed(1), p.x, bottom ? p.y + 15 : p.y - 8);
+    }
+
+    // Hedef (yansıtıcı)
+    const end = px[px.length - 1];
+    const hit = u >= 0.25 && u < 0.55 ? (u - 0.25) / 0.3 : -1;
+    if (hit >= 0) {
+      ctx.strokeStyle = `rgba(${C.amberRGB},${(1 - hit) * 0.8})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(end.x, end.y, 5 + hit * 26, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.save();
+    ctx.shadowColor = C.amber; ctx.shadowBlur = hit >= 0 ? 16 : 8;
+    ctx.fillStyle = C.amber;
+    ctx.beginPath(); ctx.arc(end.x, end.y, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Ses darbesi (iz bırakarak)
+    const ps = pulseState(g, u);
+    if (ps) {
+      const trail = g.S * 0.06;
+      const rgb = ps.back ? C.amberRGB : '233,255,224';
+      for (let k = 10; k >= 0; k--) {
+        const s = ps.back ? ps.s + trail * k / 10 : ps.s - trail * k / 10;
+        if (s < 0 || s > g.S) continue;
+        const p = pointAt(g.pts, s);
+        ctx.fillStyle = `rgba(${rgb},${(1 - k / 10) * 0.5})`;
+        ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 2 + (1 - k / 10) * 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+      const p = pointAt(g.pts, ps.s);
+      ctx.save();
+      ctx.shadowColor = `rgb(${rgb})`; ctx.shadowBlur = 18;
+      ctx.fillStyle = `rgb(${rgb})`;
+      ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Prob (gövde + kama)
+    const pw = 58, wedgeH = 20, bodyH = 18;
+    ctx.fillStyle = '#26302b';
+    ctx.beginPath();
+    ctx.moveTo(x0 - pw + 10, y0); ctx.lineTo(x0 + 10, y0); ctx.lineTo(x0 + 10, y0 - wedgeH); ctx.lineTo(x0 - pw + 10, y0 - wedgeH * 0.35);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#4a5a52'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#0e1311';
+    ctx.fillRect(x0 - pw + 10, y0 - wedgeH - bodyH, pw, bodyH);
+    ctx.strokeStyle = C.phos; ctx.lineWidth = 1.2;
+    ctx.strokeRect(x0 - pw + 10.5, y0 - wedgeH - bodyH + 0.5, pw - 1, bodyH - 1);
+    // Kristal: ışına dik
+    const cx = x0 - 16, cy = y0 - wedgeH * 0.55;
+    const ca = Math.cos(g.rad), sa = Math.sin(g.rad);
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx - ca * 9, cy + sa * 9); ctx.lineTo(cx + ca * 9, cy - sa * 9); ctx.stroke();
+    ctx.fillStyle = C.phos; ctx.font = C.mono; ctx.textAlign = 'center';
+    ctx.fillText(Math.round(g.theta) + '° PROB', x0 - pw / 2 + 10, y0 - wedgeH - 5);
+    // Çıkış noktası
+    ctx.fillStyle = C.text;
+    ctx.beginPath(); ctx.moveTo(x0, y0 + 1); ctx.lineTo(x0 - 4, y0 - 6); ctx.lineTo(x0 + 4, y0 - 6); ctx.closePath(); ctx.fill();
+
+    // P ölçü çizgisi
+    const dimY = y0 - wedgeH - bodyH - 14;
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(end.x, end.y); ctx.lineTo(end.x, dimY - 4); ctx.moveTo(x0, y0 - wedgeH - bodyH); ctx.lineTo(x0, dimY - 4); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x0, dimY); ctx.lineTo(end.x, dimY); ctx.stroke();
+    arrow(ctx, x0, dimY, -1); arrow(ctx, end.x, dimY, 1);
+    const label = `P = ${fmt(g.P)} mm`;
+    ctx.font = C.mono;
+    const lw = ctx.measureText(label).width + 12;
+    const lx = Math.min(Math.max((x0 + end.x) / 2, lw / 2 + 4), w - lw / 2 - 4);
+    ctx.fillStyle = '#050806'; ctx.fillRect(lx - lw / 2, dimY - 9, lw, 17);
+    ctx.fillStyle = C.text; ctx.textAlign = 'center';
+    ctx.fillText(label, lx, dimY + 4);
+
+    // T ölçü çizgisi
+    const tx = plateR + 14;
+    ctx.strokeStyle = C.muted;
+    ctx.beginPath(); ctx.moveTo(tx, y0); ctx.lineTo(tx, y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx - 5, y0); ctx.lineTo(tx + 5, y0); ctx.moveTo(tx - 5, y1); ctx.lineTo(tx + 5, y1); ctx.stroke();
+    ctx.fillStyle = C.text; ctx.textAlign = 'left';
+    ctx.fillText('T', tx + 8, (y0 + y1) / 2 - 2);
+    ctx.fillStyle = C.muted;
+    ctx.fillText(fmt(g.T, 1), tx + 8, (y0 + y1) / 2 + 11);
+
+    // S bilgisi
+    ctx.fillStyle = C.faint; ctx.textAlign = 'left';
+    ctx.fillText(`S = ${fmt(g.S)} mm · n = ${fmt(g.n, 2)}`, 12, h - 10);
+  }
+
+  function arrow(ctx, x, y, dir) {
+    ctx.fillStyle = C.muted;
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(x - dir * 6, y - 3.5); ctx.lineTo(x - dir * 6, y + 3.5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ---------- A-SCAN ----------
+  const NOISE_N = 400;
+  let noiseCur = makeNoise(), echoAmp = 0.8;
+  let prevTrace = null, curTrace = null;
+
+  function makeNoise() {
+    const a = new Float32Array(NOISE_N);
+    for (let i = 0; i < NOISE_N; i++) a[i] = Math.random();
+    return a;
+  }
+  function noiseAt(arr, x) {             // x: 0..10, yumuşatılmış değer gürültüsü
+    const f = Math.max(0, Math.min(NOISE_N - 1.001, x / 10 * (NOISE_N - 1)));
+    const i = Math.floor(f), t = f - i;
+    const k = (1 - Math.cos(t * Math.PI)) / 2;
+    return arr[i] * (1 - k) + arr[i + 1] * k;
+  }
+
+  // Doğrultulmuş (rectified) sinyal genliği, 0..1
+  function signal(x, g) {
+    let a = 0.02 + noiseAt(noiseCur, x) * 0.05;            // çim (grass) gürültüsü
+    a += Math.exp(-x * 4) * 0.18 * Math.abs(Math.sin(x * 60)); // giriş bölgesi yansımaları
+    const d = x - g.gate, sigma = 0.11;
+    const env = Math.exp(-(d * d) / (2 * sigma * sigma));
+    a += echoAmp * env * (0.55 + 0.45 * Math.abs(Math.cos(d * 38)));
+    return Math.min(1, a);
+  }
+
+  function buildTrace(g, W) {
+    const n = Math.max(2, Math.round(W));
+    const arr = new Float32Array(n);
+    for (let i = 0; i < n; i++) arr[i] = signal(i / (n - 1) * 10, g);
+    return arr;
+  }
+
+  function drawAscan(g, u) {
+    const { ctx, w, h } = canvases.canvasAscan;
+    ctx.clearRect(0, 0, w, h);
+    const L = 34, R = 10, Tp = 12, B = 24;
+    const W = w - L - R, H = h - Tp - B;
+    const X = d => L + d / 10 * W, Y = a => Tp + H - a * H;
+
+    // Izgara 10 × 5
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+      ctx.strokeStyle = i % 5 === 0 ? C.gridStrong : C.grid;
+      ctx.beginPath(); ctx.moveTo(X(i) + 0.5, Tp); ctx.lineTo(X(i) + 0.5, Tp + H); ctx.stroke();
+      for (let m = 1; m < 5 && i < 10; m++) {
+        const xm = X(i + m / 5);
+        ctx.strokeStyle = C.grid;
+        ctx.beginPath(); ctx.moveTo(xm, Tp + H - 4); ctx.lineTo(xm, Tp + H); ctx.stroke();
+      }
+    }
+    for (let j = 0; j <= 5; j++) {
+      ctx.strokeStyle = j === 0 ? C.gridStrong : C.grid;
+      ctx.beginPath(); ctx.moveTo(L, Y(j / 5) + 0.5); ctx.lineTo(L + W, Y(j / 5) + 0.5); ctx.stroke();
+    }
+    ctx.font = C.mono; ctx.fillStyle = C.faint;
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 10; i++) ctx.fillText(i, X(i), h - 8);
+    ctx.textAlign = 'right';
+    for (let j = 0; j <= 5; j += 1) ctx.fillText(j * 20, L - 6, Y(j / 5) + 4);
+
+    // Sekme işaretleri (her bacak sonu)
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = C.faint;
+    ctx.textAlign = 'center';
+    const legs = g.n * 2;
+    for (let k = 1; k < legs - 1e-6; k++) {
+      const xd = k * g.legS / g.range * 10;
+      ctx.beginPath(); ctx.moveTo(X(xd), Tp + 14); ctx.lineTo(X(xd), Tp + H); ctx.stroke();
+      ctx.fillStyle = C.faint;
+      ctx.fillText((k * 0.5).toFixed(1), X(xd), Tp + 10);
+    }
+    ctx.setLineDash([]);
+
+    // Kapı
+    const gateLevel = 0.5, gateHalf = 0.45;
+    const sweep = u * 10;
+    const alarm = sweep >= g.gate && echoAmp > gateLevel;
+    ctx.save();
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.lineCap = 'butt';
+    if (alarm) { ctx.shadowColor = C.amber; ctx.shadowBlur = 12; }
+    ctx.beginPath(); ctx.moveTo(X(g.gate - gateHalf), Y(gateLevel)); ctx.lineTo(X(g.gate + gateHalf), Y(gateLevel)); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = alarm ? C.amber : `rgba(${C.amberRGB},0.7)`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`KAPI ${fmt(g.gate)}`, X(g.gate + gateHalf) + 6, Y(gateLevel) + 4);
+
+    // Önceki iz (fosfor kalıcılığı) ve güncel iz
+    const plot = (arr, upto, style, width, glow) => {
+      const n = arr.length, last = Math.min(n - 1, Math.floor(upto * (n - 1)));
+      if (last < 1) return;
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i <= last; i++) {
+        const x = L + i / (n - 1) * W, y = Y(arr[i]);
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.strokeStyle = style; ctx.lineWidth = width; ctx.lineJoin = 'round';
+      if (glow) { ctx.shadowColor = C.phos; ctx.shadowBlur = glow; }
+      ctx.stroke();
+      ctx.restore();
+    };
+    if (prevTrace && prevTrace.length === curTrace.length) plot(prevTrace, 1, `rgba(${C.phosRGB},0.22)`, 1.2, 0);
+    plot(curTrace, u, C.phos, 1.6, 8);
+
+    // Süpürme imleci
+    if (u < 0.999) {
+      const sx = X(sweep);
+      const gr = ctx.createLinearGradient(sx - 30, 0, sx, 0);
+      gr.addColorStop(0, `rgba(${C.phosRGB},0)`); gr.addColorStop(1, `rgba(${C.phosRGB},0.12)`);
+      ctx.fillStyle = gr; ctx.fillRect(sx - 30, Tp, 30, H);
+      ctx.fillStyle = C.phos;
+      ctx.beginPath(); ctx.arc(sx, Y(curTrace[Math.min(curTrace.length - 1, Math.floor(u * (curTrace.length - 1)))]), 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Tepe değeri
+    if (sweep >= g.gate) {
+      ctx.fillStyle = C.text; ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(echoAmp * 100)}% · S ${fmt(g.S)}`, X(g.gate), Y(Math.min(1, echoAmp)) - 8 < Tp + 10 ? Tp + 24 : Y(echoAmp) - 8);
+    }
+  }
+
+  // ---------- DÖNGÜ ----------
+  const CYCLE_MS = 2600;
+  let lastT = performance.now(), visible = true, needsFit = true;
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+
+    if (visible) {
+      if (needsFit) { fitAll(); needsFit = false; }
+
+      // Girdi değişimlerinde çizimin yumuşakça yeni değerlere akması
+      const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 11);
+      for (const key of ['T', 'theta', 'n']) {
+        view[key] += (state[key] - view[key]) * k;
+        if (Math.abs(state[key] - view[key]) < 1e-4) view[key] = state[key];
+      }
+      const g = geometry(view.T, view.theta, view.n, view.R || state.R || 0);
+
+      if (playing) {
+        phase += dt * 1000 / CYCLE_MS * speed;
+        if (phase >= 1) {
+          phase %= 1;
+          prevTrace = curTrace;
+          noiseCur = makeNoise();
+          echoAmp = 0.76 + Math.random() * 0.08;
+        }
+      }
+      curTrace = buildTrace(g, canvases.canvasAscan.w - 44);
+      drawBeam(g, phase);
+      drawAscan(g, phase);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  new ResizeObserver(() => { needsFit = true; }).observe($('canvasBeam'));
+  new ResizeObserver(() => { needsFit = true; }).observe($('canvasAscan'));
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      visible = entries.some(e => e.isIntersecting);
+    }).observe(document.querySelector('.screens'));
+  }
+
+  // ---------- RAPOR ----------
+  function toast(msg, err) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.toggle('err', !!err);
+    t.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function copyTechnicalReport() {
+    const g = geometry(state.T, state.theta, state.n, state.R);
+    const report = `ULTRASONİK MUAYENE HESAPLARI TEKNİK RAPORU
+-------------------------------------------
+Malzeme Kalınlığı (T): ${state.T} mm
+Prob Açısı: ${state.theta}°
+Sekme Sayısı (n): ${state.n}
+
+1. Prop Mesafesi Hesabı (P): ${fmt(g.P)} mm *(Prop Pucu Çapı / Papuç Yarıçapı Çıkacak)
+2. Ses Yolu (S) Hesabı: ${fmt(g.S)} mm
+3. Ekran Aralığı Hesabı: ${fmt(g.range)} mm
+4. Kapı Konumu (Geçiş) Hesabı: ${fmt(g.gate)}
+-------------------------------------------
+Tarih: ${new Date().toLocaleDateString('tr-TR')}
+NDTPratik Saha Doğrulama Aracı`;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(report)
+        .then(() => toast('Teknik rapor panoya kopyalandı'))
+        .catch(() => fallbackCopy(report));
+    } else {
+      fallbackCopy(report);
+    }
+  }
+  $('btnCopy').addEventListener('click', copyTechnicalReport);
+
+  // Pano API'si kullanılamadığında (örn. dosyadan açıldığında) yedek kopyalama
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    if (ok) toast('Teknik rapor panoya kopyalandı');
+    else alert("Kopyalama başarısız oldu. Lütfen manuel kopyalayın:\n\n" + text);
+  }
+
+  // ---------- AĞ DURUMU & ÇEVRİMDIŞI ----------
+  function netUpdate() {
+    const on = navigator.onLine;
+    $('netStatus').classList.toggle('offline', !on);
+    $('netText').textContent = on ? 'ÇEVRİMİÇİ' : 'ÇEVRİMDIŞI';
+  }
+  window.addEventListener('online', netUpdate);
+  window.addEventListener('offline', netUpdate);
+  netUpdate();
+
+
+  // Başlat
+  if (reduceMotion) { playing = true; $('btnPlay').click(); }
+  paintRange(rangeT); paintRange(rangeA);
+  updateReadouts();
+  requestAnimationFrame(frame);
+
+
+
+</script>
+
+</body></html>
